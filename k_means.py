@@ -36,7 +36,7 @@ class KMeans:
         best_distortion = np.float("-inf")
         best_centroids = None    
             
-        for r in range(self.repeats+1):
+        for _ in range(self.repeats+1):
             cluster_ind = np.repeat(0, X.shape[0])
 
             #Initate centroids and cluster members
@@ -134,21 +134,18 @@ class KMeans:
                 self.centroids[worst_ind] = X_high.mean(axis = 0).to_numpy()
                 
                 # Itterate until convergence
-                n_iter = 0
-                c_change = True
-                while n_iter<self.max_iter and c_change:
-                    c_change = False
+                for _ in range(self.max_iter):
+                    #Calculating new centroids
+                    for i in range(self.m_clusters):
+                        X_i = X[cluster_ind == i]
+                        self.centroids[i] = X_i.mean(axis = 0).to_numpy()
                     
+                    #Assigne data points to new cluster and check if cluster assignment chenges
                     cross_dist = cross_euclidean_distance(X.to_numpy(), self.centroids)
                     cluster_ind_new = np.argmin(cross_dist, axis = 1)
                     if not (cluster_ind_new == cluster_ind).any():
-                        c_change = True
+                        break
                     cluster_ind = cluster_ind_new
-                    
-                    for i in range(self.m_clusters):
-                        X_i = X[cluster_ind == i]
-                        self.centroids[i] = X_i.mean(axis = 0).to_numpy()               
-                    n_iter += 1
                 
                 if self.plot_all:
                     z = cluster_ind
