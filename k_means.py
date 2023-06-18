@@ -11,16 +11,12 @@ from scipy.spatial import distance_matrix
 class KMeans:
     
     def __init__(self, m_clusters = 2, max_iter = 1000, plot_all = False,
-                 n_push = 0, push_factor = 0, seed = None, bandwidth = 1,
-                 sample = "smart_sample", repeats = 0, worst_prec = 0.05, n_rerolls = 0):
+                 seed = None, sample = "smart_sample", repeats = 0, worst_prec = 0.05, n_rerolls = 0):
         self.m_clusters = m_clusters
         self.max_iter = max_iter
         self.centroids = None
         self.plot_all = plot_all
-        self.n_push = n_push
-        self.push_factor = push_factor
         self.seed = seed
-        self.bandwidth = bandwidth
         self.sample = sample
         self.repeats = repeats
         self.worst_prec = worst_prec
@@ -66,20 +62,7 @@ class KMeans:
 
             elif self.sample == "smart_sample":
                 # Sample randomly from the data, but with weighted probabilities 
-                # such that centroids are more likely to be spread out
-                
-                # centroids = np.array([])
-                # prob_vec = np.ones(X.shape[0])
-                # prob_vec = prob_vec/sum(prob_vec)
-                # while len(centroids) < self.m_clusters:
-                #     idx = np.random.choice(X.shape[0], size=1, p = prob_vec)
-                #     cent = X.loc[idx].to_numpy()
-                #     centorids = np.append(centroids, cent)
-                    
-                #     distance = cross_euclidean_distance(cent, X.to_numpy()).reshape(1)
-                #     prob_vec = prob_vec * distance
-                #     prob_vec = prob_vec/sum(prob_vec)   
-                
+                # such that centroids are more likely to be spread out         
                 idx = np.random.choice(range(X.shape[0]), size=1)
                 centroids = X.loc[idx].to_numpy()
                 while len(centroids)<self.m_clusters:
@@ -104,23 +87,21 @@ class KMeans:
                 sns.scatterplot(x=C[:,0], y=C[:,1], hue=range(K), palette='tab10', marker='*', s=250, edgecolor='black', ax=ax)
                 ax.legend().remove();
             
-            n_iter = 0
-            c_change = True
-            while n_iter<self.max_iter and c_change:
-                c_change = False
-
+            
+            for _ in range(self.max_iter):
                 #Calculating new centroids
                 for i in range(self.m_clusters):
                     X_i = X[cluster_ind == i]
                     self.centroids[i] = X_i.mean(axis = 0).to_numpy()
-
+                
                 #Assigne data points to new cluster and check if cluster assignment chenges
                 cross_dist = cross_euclidean_distance(X.to_numpy(), self.centroids)
                 cluster_ind_new = np.argmin(cross_dist, axis = 1)
                 if not (cluster_ind_new == cluster_ind).any():
-                    c_change = True
+                    break
                 cluster_ind = cluster_ind_new
-
+                
+                # Plot the progress
                 if self.plot_all:
                     z = cluster_ind
                     C = self.centroids.copy()
@@ -129,8 +110,7 @@ class KMeans:
                     sns.scatterplot(x='x0', y='x1', hue=z, hue_order=range(K), palette='tab10', data=X, ax=ax);
                     sns.scatterplot(x=C[:,0], y=C[:,1], hue=range(K), palette='tab10', marker='*', s=250, edgecolor='black', ax=ax)
                     ax.legend().remove();
-
-                n_iter += 1
+                    
             # Move bad cluster to for more optimal coverage
             n_worst = int(round(X.shape[0]*self.worst_prec))
             best_reroll_centroids = self.centroids
